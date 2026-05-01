@@ -133,7 +133,7 @@ def _run_session(kickoff: str, title: str) -> None:
     log.info("session %s created (%s)", session.id, title)
 
     # Stream-first: open the stream BEFORE sending the kickoff.
-    with client.beta.sessions.stream(session_id=session.id) as stream:
+    with client.beta.sessions.events.stream(session_id=session.id) as stream:
         client.beta.sessions.events.send(
             session_id=session.id,
             events=[
