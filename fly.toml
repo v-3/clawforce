@@ -1,0 +1,33 @@
+# Fly.io app config for the AI Tutor webhook orchestrator.
+# Set primary_region close to where Slack delivers from (US-West works well
+# for Slack's edge POPs). One always-on machine; ~$2-5/month.
+
+app = "ai-tutor-example"
+primary_region = "sjc"
+
+[build]
+  # Uses ./Dockerfile
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Always-on. Slack's 3-sec ack window doesn't tolerate cold starts.
+  auto_stop_machines = false
+  auto_start_machines = false
+  min_machines_running = 1
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  path = "/healthz"
+  protocol = "http"
+  timeout = "5s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "256mb"

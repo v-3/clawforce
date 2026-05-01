@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Transformer architecture",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "Self-attention + feed-forward stack. Foundation of modern LLMs."
+  },
+  {
+    "name": "Self-attention",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "Q/K/V dot-product mechanism. Core of transformer."
+  },
+  {
+    "name": "Tokenization (BPE / SentencePiece)",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "How text becomes tokens. Affects context window economics and multilingual perf."
+  },
+  {
+    "name": "Positional encodings (RoPE, ALiBi)",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "How transformers represent token order. RoPE dominates long-context."
+  },
+  {
+    "name": "Pre-training vs fine-tuning",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "Stages of LLM training. Pre-training learns the world; fine-tuning specializes."
+  },
+  {
+    "name": "RLHF and RLAIF",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "Reinforcement learning from human/AI feedback. Aligns model output with preferences."
+  },
+  {
+    "name": "Constitutional AI",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "Anthropic's alignment approach using a written constitution + AI critique."
+  },
+  {
+    "name": "Mixture of Experts (MoE)",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "Sparse activation across many sub-networks. GPT-4, Mixtral, DeepSeek-V3."
+  },
+  {
+    "name": "Chain-of-thought prompting",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "Explicit reasoning steps in output. Foundation of inference-time compute."
+  },
+  {
+    "name": "Inference-time compute / extended thinking",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "Spending tokens on thinking before answering. o1, Claude extended thinking."
+  },
+  {
+    "name": "Tool use / function calling",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "LLM emits structured tool calls; harness executes; results loop back."
+  },
+  {
+    "name": "Retrieval-augmented generation (RAG)",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "Retrieve relevant docs, condition generation on them. Reduces hallucination on factual tasks."
+  },
+  {
+    "name": "Embeddings",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "Dense vector representations. Foundation of retrieval, clustering, semantic search."
+  },
+  {
+    "name": "Scaling laws",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "Loss as power-law in compute/data/params. Chinchilla refined the data ratio."
+  },
+  {
+    "name": "Mechanistic interpretability",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "Reverse-engineering circuits inside trained models. Sparse autoencoders, induction heads."
+  },
+  {
+    "name": "Agentic systems / multi-step agents",
+    "proficiency": 1,
+    "leitner_box": 1,
+    "notes": "Models that plan, use tools, and self-correct over many steps. Claude Code, Devin."
+  },
+  {
+    "name": "Prompt caching",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "Reusing computed KV state across requests. ~10x cost/latency reduction on stable prefixes."
+  },
+  {
+    "name": "Speculative decoding",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "Draft model proposes tokens, target verifies in parallel. Faster inference."
+  },
+  {
+    "name": "Long-context techniques",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "Ring attention, flash attention, sparse attention. Pushing context windows past 1M."
+  },
+  {
+    "name": "Evaluation / benchmarks",
+    "proficiency": 0,
+    "leitner_box": 1,
+    "notes": "MMLU, HumanEval, SWE-bench, MMLU-Pro. Saturation, contamination, harness effects."
+  }
+]

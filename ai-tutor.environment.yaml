@@ -1,0 +1,10 @@
+name: ai-tutor-env
+description: |
+  Environment for the AI Tutor agent. Unrestricted networking — needs egress
+  to arxiv, RSS feeds, blogs, Hacker News, Reddit, and the Slack Web API
+  proxy. (The Slack token never enters the sandbox; outbound Slack calls go
+  through the host orchestrator via the post_slack_message custom tool.)
+config:
+  type: cloud
+  networking:
+    type: unrestricted

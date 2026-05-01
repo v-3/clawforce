@@ -1,0 +1,81 @@
+name: AI Tutor
+
+# Two separate cron rhythms run on this workflow:
+#   - missed-check at 5:50 AM PT — flags yesterday as MISSED if no reply came
+#     in (24h grace per spec). Updates concept state, posts nothing.
+#   - daily-run   at 6:00 AM PT — runs the full pipeline + posts the question.
+#
+# Both DST and standard-time crons are listed; conditional `if:` blocks per job
+# route each cron firing to the correct job. The 10-minute gap between them
+# means missed-check finishes before the daily-run kicks off and reads state.
+#
+# GitHub Actions cron is in UTC.
+
+on:
+  schedule:
+    # missed-check (5:50 AM PT)
+    - cron: "50 12 * * *"   # PDT (summer)
+    - cron: "50 13 * * *"   # PST (winter)
+    # daily-run (6:00 AM PT)
+    - cron: "0 13 * * *"    # PDT (summer)
+    - cron: "0 14 * * *"    # PST (winter)
+  workflow_dispatch:        # manual trigger — only invokes daily-run
+    inputs:
+      kickoff:
+        description: 'Kickoff message (e.g. "DAILY RUN", "ONBOARDING start", "MAINTENANCE")'
+        default: 'DAILY RUN'
+        required: true
+
+env:
+  ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
+  AGENT_ID:              ${{ secrets.AGENT_ID }}
+  AGENT_VERSION:         ${{ secrets.AGENT_VERSION }}
+  ENV_ID:                ${{ secrets.ENV_ID }}
+  MEMORY_STORE_ID:       ${{ secrets.MEMORY_STORE_ID }}
+  SLACK_BOT_TOKEN:       ${{ secrets.SLACK_BOT_TOKEN }}
+  SLACK_SIGNING_SECRET:  ${{ secrets.SLACK_SIGNING_SECRET }}
+  ALLOWED_SLACK_USER_ID: ${{ secrets.ALLOWED_SLACK_USER_ID }}
+  DEFAULT_DM_CHANNEL:    ${{ secrets.DEFAULT_DM_CHANNEL }}
+
+jobs:
+  missed-check:
+    if: github.event.schedule == '50 12 * * *' || github.event.schedule == '50 13 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r runtime/requirements.txt
+
+      # Yesterday in PT, regardless of DST. Run records are keyed by PT date
+      # since that's when the daily cron writes them.
+      - name: Compute yesterday in PT
+        id: yest
+        run: |
+          DATE=$(TZ='America/Los_Angeles' date -d 'yesterday' +%Y-%m-%d)
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          echo "yesterday in PT: $DATE"
+
+      - name: Run missed-day check
+        run: python runtime/orchestrator.py missed "${{ steps.yest.outputs.date }}"
+
+  daily-run:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.event.schedule == '0 13 * * *'
+      || github.event.schedule == '0 14 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r runtime/requirements.txt
+
+      - name: Run daily session
+        run: |
+          python runtime/orchestrator.py daily \
+            --kickoff "${{ github.event.inputs.kickoff || 'DAILY RUN' }}"

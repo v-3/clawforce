@@ -1,0 +1,11 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.env
+runtime/.env
+ai-tutor.env
+*.bak
+.claude
+.DS_Store

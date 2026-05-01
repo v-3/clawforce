@@ -1,0 +1,17 @@
+# secrets / local state
+ai-tutor.env
+runtime/.env
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv*/
+
+# editor / OS
+.claude/
+.DS_Store
+*.bak
+
+# fly
+.fly/

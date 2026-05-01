@@ -1,0 +1,37 @@
+# Curated feeds for the AI Tutor's daily scan. Add/remove freely.
+# Trust score 0.9 (high) by default. Edit and re-deploy to update.
+feeds:
+  - name: Anthropic
+    type: rss
+    url: https://www.anthropic.com/news/rss.xml
+  - name: OpenAI Blog
+    type: rss
+    url: https://openai.com/blog/rss.xml
+  - name: Google DeepMind
+    type: html
+    url: https://deepmind.google/discover/blog/
+  - name: Lilian Weng
+    type: rss
+    url: https://lilianweng.github.io/index.xml
+  - name: Sebastian Raschka
+    type: rss
+    url: https://magazine.sebastianraschka.com/feed
+  - name: Simon Willison
+    type: rss
+    url: https://simonwillison.net/atom/everything/
+  - name: Interconnects (Nathan Lambert)
+    type: rss
+    url: https://www.interconnects.ai/feed
+  - name: The Gradient
+    type: rss
+    url: https://thegradient.pub/rss/
+arxiv_categories:
+  - cs.LG
+  - cs.CL
+  - cs.AI
+buzz_sources:
+  - name: Hacker News
+    url: https://hn.algolia.com/api/v1/search?tags=front_page
+  - name: r/MachineLearning
+    url: https://www.reddit.com/r/MachineLearning/.json
+  # X/Twitter currently skipped — no auth path available without a custom tool
