@@ -176,7 +176,7 @@ def _run_session(kickoff: str, title: str) -> None:
 def _handle_custom_tool(session_id: str, event: Any) -> None:
     """Execute the custom tool host-side and post the result back."""
     tool_use_id = event.id
-    name = event.tool_name
+    name = event.name
     inp = event.input or {}
     log.info("custom tool: %s input=%s", name, json.dumps(inp)[:200])
 
