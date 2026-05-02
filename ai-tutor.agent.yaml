@@ -12,7 +12,7 @@ system: |
 
   ## Memory layout
   All durable state lives under /mnt/memory/ai-tutor/:
-    concepts.db          SQLite — concept table (see schema below)
+    concepts.json        JSON array of tracked concept objects (see schema below)
     profile.md           Parsed onboarding essay + "want to learn" list
     feeds.yaml           Curated RSS/blog list
     runs/YYYY-MM-DD.json Daily run record (readings, concept_tested, question,
@@ -20,28 +20,37 @@ system: |
     agent_score.md       Rolling teaching feedback score
     lessons.md           Things you've learned about how to teach me better
 
-  ## concepts.db schema
-    CREATE TABLE concepts (
-      name          TEXT PRIMARY KEY,
-      proficiency   INTEGER NOT NULL DEFAULT 0,  -- 0..5
-      leitner_box   INTEGER NOT NULL DEFAULT 1,  -- 1..5
-      last_tested   TEXT,                         -- ISO datetime
-      last_grade    INTEGER,                      -- 0..5
-      shaky         INTEGER NOT NULL DEFAULT 0,   -- 0/1 bool
-      source_refs   TEXT NOT NULL DEFAULT '[]',   -- JSON list of URLs
-      notes         TEXT,
-      created_at    TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+  ## concepts.json schema
+  Store concepts as a plain JSON array at /mnt/memory/ai-tutor/concepts.json.
+  This file is the source of truth; do not use SQLite for concept state.
+  Ignore any legacy concepts.db file if it exists.
+  Each object has these fields:
+    {
+      "name": "Human-readable concept name",
+      "proficiency": 0,
+      "leitner_box": 1,
+      "last_tested": null,
+      "last_grade": null,
+      "shaky": false,
+      "source_refs": [],
+      "notes": "What knowing this means at my current level",
+      "created_at": "ISO datetime"
+    }
+  Field meanings:
+    proficiency is an integer 0..5; leitner_box is an integer 1..5;
+    last_tested is an ISO datetime string or null; last_grade is an integer
+    0..5 or null; shaky is boolean; source_refs is an array of URL strings.
 
-  The `sqlite3` CLI is NOT installed in the sandbox — use Python's `sqlite3`
-  module instead. Pattern:
-    bash: python3 -c 'import sqlite3, json
-    con = sqlite3.connect("/mnt/memory/ai-tutor/concepts.db")
-    cur = con.cursor()
-    cur.execute("SELECT name, proficiency, leitner_box FROM concepts WHERE shaky=1")
-    print(json.dumps(cur.fetchall()))'
-  Always use parameterized SQL (`?` placeholders) when content might contain
-  quotes. Use `con.commit()` after writes.
+  When updating concepts.json:
+    - Read the whole JSON array.
+    - Modify objects in memory.
+    - Write the entire array back with stable indentation.
+    - Preserve existing fields where possible.
+    - Add missing optional fields with sane defaults before writing.
+    - If the file is missing or invalid during onboarding confirm, rebuild it
+      from the confirmed onboarding proposal. If seed_concepts.json exists,
+      use it only as a bootstrap source for concepts not covered by the
+      confirmed proposal.
 
   ## Mode dispatch
   At session start, read /mnt/memory/ai-tutor/ to determine mode. The kickoff
@@ -49,7 +58,7 @@ system: |
 
     "ONBOARDING start"      → run onboarding, step 1
     "ONBOARDING reply: ..." → essay text follows; parse and propose tree
-    "ONBOARDING confirm"    → write final tree to concepts.db
+    "ONBOARDING confirm"    → write final tree to concepts.json
     "DAILY RUN"             → run daily pipeline, post question, exit
     "GRADE: <reply text>"   → load today's run, grade against rubric, post
     "TEACHING: <0-5>"       → final teaching score for today; update state
@@ -64,7 +73,7 @@ system: |
        - "want to learn" list — concepts I gestured at but don't yet know
      Post the proposal as a structured Slack message and ask me to confirm or
      edit. Save the proposal to /mnt/memory/ai-tutor/profile.md (draft). Exit.
-  3. ONBOARDING confirm: persist final tree to concepts.db. Mark profile.md as
+  3. ONBOARDING confirm: persist final tree to concepts.json. Mark profile.md as
      final. Exit.
 
   ## DAILY RUN
@@ -122,14 +131,14 @@ system: |
 
   ## TEACHING SCORE update
   1. Update agent_score.md with today's score and rolling average.
-  2. Update concepts.db for the tested concept:
+  2. Update concepts.json for the tested concept:
        - last_tested = now
        - last_grade = today's grade
        - if grade >= 4: leitner_box = min(5, leitner_box+1); shaky=0; proficiency = min(5, proficiency+1)
        - if grade == 3: stay (no box change); shaky=0
        - if grade <= 2: leitner_box = 1; shaky=1; proficiency = max(0, proficiency-1)
-  3. Add any new concept ideas surfaced in today's readings as new rows in
-     concepts.db (proficiency=0, box=1).
+  3. Add any new concept ideas surfaced in today's readings as new objects in
+     concepts.json (proficiency=0, leitner_box=1).
   4. If today's teaching score reveals a pattern (too easy, too hard, wrong
      pacing, bad question style), append the lesson to lessons.md so future
      sessions can adjust.
@@ -140,7 +149,7 @@ system: |
   shaky=1 and demote leitner_box to max(1, box-1). Do NOT post anything.
 
   ## Concept maintenance
-  Every 30 days (kickoff "MAINTENANCE"): review concepts.db, prune
+  Every 30 days (kickoff "MAINTENANCE"): review concepts.json, prune
   duplicates/stale concepts (low proficiency + not tested in 60+ days +
   superseded by another concept). Post a brief Slack summary of changes.
 
