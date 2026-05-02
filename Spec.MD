@@ -1,140 +1,147 @@
-### AI Tutor
+# AI Tutor
 
-# Goal
-AI tutor's goal is to keep me current on AI research and discussion by curating a 1-hour learning session every day, delivered via Slack. 
+## Goal
 
-# Success criteria in 3 months
-- I can hold a substantive technical conversation about ≥ 20 recent AI concepts I didn't know before.
-- My proficiency on tracked concepts trends upward, with measurable revision cadence.
-- I have completed 80 sessions
-- My overall rating for you is 4.5 out of 5
+The AI tutor keeps me current on AI research and discussion by curating a daily
+one-hour learning session delivered through Slack.
 
-# Learning model
-- Maintain a list of different concepts. Start with a small seed and then grow it
-- When the tutor encounters a concept that doesn't fit existing one, it adds a new concept in the model
-- Every 30 days, Ai tutor revisits the list and prunes unnecessary ones
+## Success Criteria In 3 Months
 
-# For each concept store:
-- name; string; Human-readable
-- proficiency; int;  0 = unseen, 1 = introduced, 2 = shaky, 3 = solid, 4 = strong, 5 = teaching-level
-- leitner_box; int 1-5; Maps to surfacing interval 
-- last_tested; datetime; Last time it was the focus of the daily question
-- last_grade; int 0-5; From most recent test
-- shaky; bool: True if last grade ≤ 2; forces sooner re-surfacing
-- source_refs: list[url], Where I learned it
-- notes; string: Agent-generated summary of what "knowing this" means at my current level
+- I can hold a substantive technical conversation about at least 20 recent AI concepts I did not know before.
+- My proficiency on tracked concepts trends upward with measurable revision cadence.
+- I have completed 80 sessions.
+- My overall rating for the tutor is at least 4.5 out of 5.
 
-# Storage
+## Learning Model
+
+- Maintain a list of concepts. Start with a small seed list, then grow it over time.
+- When the tutor encounters an important concept that does not fit the existing model, add it as a new concept.
+- Every 30 days, the AI tutor revisits the list and prunes unnecessary concepts.
+
+## Concept Fields
+
+For each concept, store:
+
+- `name`: string; human-readable concept name.
+- `proficiency`: integer; 0 = unseen, 1 = introduced, 2 = shaky, 3 = solid, 4 = strong, 5 = teaching-level.
+- `leitner_box`: integer from 1 to 5; maps to the surfacing interval.
+- `last_tested`: datetime; the last time this concept was the focus of a daily question.
+- `last_grade`: integer from 0 to 5; the grade from the most recent test.
+- `shaky`: boolean; true if the last grade was 2 or lower, forcing earlier resurfacing.
+- `source_refs`: list of URLs where I learned the concept.
+- `notes`: string; agent-generated summary of what "knowing this" means at my current level.
+
+## Storage
+
 Store concepts in a text file in the memory store, preferably `concepts.json`.
 Keep it easy for the agent to inspect and rewrite directly; avoid SQLite or
 other binary/stateful formats for the core learning model.
 
+## Onboarding
 
-# Onboarding
+Onboarding is a one-time process before daily runs begin.
 
-One-time, before daily runs begin. 
+The agent posts a Slack DM asking me to write a free-form 200-800 word essay on
+my AI background: what I have built, what I have read, what I have struggled
+with, and what I want to be good at.
 
-Agent posts a Slack DM asking me to write a free-form essay (200-800 words) on my AI background: what I've built, read, struggled with, what I want to be good at.
+The agent parses the essay with an LLM and proposes:
 
-Agent parses the essay with an LLM and proposes:
+- An initial concept tree skeleton with depth 1-2.
+- Initial proficiency estimates for concepts I mentioned.
+- A "want to learn" list for concepts I gestured at but do not yet know.
 
-An initial concept tree skeleton (depth 1-2) Initial proficiency estimates for any concepts I mentioned A "want to learn" list — concepts I gestured at but don't yet know
+I review and edit the tree in Slack via a structured message. The agent confirms
+the final tree and schedules the first daily run.
 
-I review and edit the tree in Slack via a structured message. Agent confirms and schedules the first daily run.
+## Daily Run Pipeline
 
-# Daily run pipeline
+Daily runs are triggered at a fixed time, configurable with a default of 6:00 AM
+Pacific.
 
-Triggered at a fixed time (configurable, default 6:00 AM PT).
+The tutor scans three source classes in this order:
 
-Three source classes, scanned in this order:
+- Curated feeds, highest trust: blogs, Substacks, and newsletters I have added. Use RSS where available and HTML scraping otherwise. Scan the last 24-48 hours of new posts.
+- Targeted arXiv: configured categories, defaulting to `cs.LG`, `cs.CL`, and `cs.AI`. Scan the last 24-48 hours and filter by simple LLM relevance against my "want to learn" list and weak concepts.
+- Buzz scan: Twitter/X, Hacker News, and `/r/MachineLearning`. Look for posts or threads with high engagement and a substantive linked artifact, such as a paper, blog post, or repository. The buzz scan should catch important items the curated list missed, not feed timeline-brain.
 
-Curated feeds (highest trust): blogs, Substacks, newsletters I've added. RSS where available; HTML scrape otherwise. Last 24-48h of new posts.
+The output is a candidate pool of 10-30 items with metadata: source, link,
+title, abstract or excerpt, engagement signal, and detected concepts.
 
-Targeted arxiv: configured categories (default: cs.LG, cs.CL, cs.AI). Last 24-48h. Filtered by simple LLM relevance check against my "want to learn" list and weak concepts.
+## Scoring And Selection
 
-Buzz scan: Twitter/X, Hacker News, /r/MachineLearning. Look for posts/threads with high engagement and a substantive linked artifact (paper, blog, repo). The buzz scan exists to catch important things my curated list missed, not to feed the timeline-brain.
+- Relevance, 0-1: overlap between detected concepts and my weak concepts plus "want to learn" list.
+- Difficulty fit, 0-1: whether this is one step beyond my current proficiency on its core concept. Too easy is boring; too hard bounces off.
+- Quality prior, 0-1: based on source trust score. Curated feeds start at 0.9, buzz starts at 0.5, and both are adjusted by my historical ratings.
 
-Output: a candidate pool of 10-30 items with metadata (source, link, title, abstract/excerpt, engagement signal, detected concepts).
+The agent computes a composite score and picks 1-3 items totaling about 45
+minutes of estimated reading time, using word count / 200 wpm plus a per-source
+modifier for paper density.
 
+Selected content should enable learning of a core concept.
 
-# Scoring & selection
+## Question Generation
 
-- Relevance (0-1): overlap between detected concepts and (my weak concepts ∪ want-to-learn list)
-- Difficulty fit (0-1): is this one step beyond my current proficiency on its core concept? Too easy = boring, too hard = bounces off
-- Quality prior (0-1): from source trust score (curated feeds start at 0.9, buzz at 0.5, adjusted by my historical ratings)
+The agent picks one core concept from the day's readings to test.
 
-Composite score, agent picks 1-3 items totaling ~45 minutes of estimated reading time (estimated by word count / 200 wpm, plus a per-source modifier for paper density).
+It generates:
 
-Select content that enables learning of a core concept. 
+- The question, shown to me: open-ended, about 10-15 minutes of thinking and writing. It tests understanding and stretches one step beyond what is stated in the readings, such as applying the idea to a case the paper did not discuss, relaxing an assumption, or comparing the approach to a prior reading.
+- A hidden rubric, not shown until after I answer: 3-5 bullet points naming what a strong answer covers. Store it in the run record.
 
-# Question generation
+The rubric must be authored by the question generator at the same time as the
+question, not by the grader after the fact. The grader needs a fixed standard so
+it grades against intended depth rather than the answer's vibe.
 
-The agent picks one core concept from the day's readings to test. 
+## Slack Delivery
 
-Generates:
-- The question (shown to me): open-ended, ~10-15 minutes of thinking + writing. Tests understanding and stretches one step beyond what's stated in the readings (e.g., "apply this to X case the paper didn't discuss," "what would break if Y assumption were relaxed?", "compare this approach to Z from last week's reading").
-- A hidden rubric (not shown to me until after I answer): 3-5 bullet points naming what a strong answer covers. Stored in the run record.
+The agent sends one message in a new thread at the scheduled time.
 
-The rubric must be authored by the question-generator at the same time as the question, not by the grader after the fact. Rationale: the grader needs a fixed standard, otherwise it'll grade based on my answer's vibe rather than against intended depth.
-
-
-# Slack delivery
-
-One message in a new thread, sent at scheduled time. 
-
-The question is the last thing in the message. 
+The question is the last thing in the message.
 
 When I reply in the thread:
 
-Agent grades my answer with an LLM judge using the hidden rubric. Output: integer 0-5 + 1-2 lines of feedback.
-Agent posts the grade, the feedback, and reveals the rubric.
-Agent takes final feedback on its teaching on a scale of 5
-Agent does not elaborate further and answer anything else
+- The agent grades my answer with an LLM judge using the hidden rubric. Output: integer 0-5 plus 1-2 lines of feedback.
+- The agent posts the grade, the feedback, and the revealed rubric.
+- The agent asks for final feedback on its teaching on a scale of 0-5.
+- The agent does not elaborate further or answer follow-up questions in that grading response.
 
-
-#  State updates
+## State Updates
 
 For the tested concept:
 
-- Update last_tested, last_grade, New proficiency 
-- Add new concept ideas to be learned
+- Update `last_tested`, `last_grade`, and proficiency.
+- Add new concept ideas surfaced by the session.
 
-Update overall agent score on scale of 5
+Update the overall agent score on a 0-5 scale.
 
-On a missed day or low-effort reply
-- Tested concept marked shaky, demoted one box.
+On a missed day or low-effort reply:
 
-If I don't reply within 24h, the concept enters shaky state
+- Mark the tested concept as shaky and demote it one box.
 
+If I do not reply within 24 hours, the tested concept enters the shaky state.
 
+## Spaced Repetition (Leitner)
 
-# Spaced repetition (Leitner)
+Use five boxes with intervals of 1, 3, 7, 14, and 30 days.
 
-Five boxes with intervals: 1, 3, 7, 14, 30 days.
-
-New concepts enter at box 1.
-Pass (grade ≥ 4): promote one box.
-Hold (grade = 3): stay.
-Fail (grade ≤ 2): demote to box 1, mark shaky.
-shaky concepts surface within 24-48h regardless of box.
+- New concepts enter at box 1.
+- Pass, grade >= 4: promote one box.
+- Hold, grade = 3: stay in the current box.
+- Fail, grade <= 2: demote to box 1 and mark shaky.
+- Shaky concepts surface within 24-48 hours regardless of box.
 
 Daily question selection priority:
 
-Any shaky concept due today.
-Highest-priority concept due today by box interval.
-If nothing due, pick weakest concept (lowest proficiency, oldest last_tested).
+1. Any shaky concept due today.
+2. The highest-priority concept due today by box interval.
+3. If nothing is due, the weakest concept by lowest proficiency and oldest `last_tested`.
 
+## General Requirements
 
-# Generally
-
-Try new things if needed to improve your teaching style 
-
-
-All of this is a Claide managed agent deployed in cloud
-Ability to select Claude model
-All communication in slack
-IO filtering to ensure messages only come from a fixed slack user, else don't reply
-Update your instruction and strategies to improve teach style
-
-
-
+- Try new teaching approaches when needed to improve learning outcomes.
+- Run as a Claude managed agent deployed in the cloud.
+- Allow Claude model selection.
+- Keep all communication in Slack.
+- Apply I/O filtering so messages are accepted only from a fixed Slack user.
+- Update instructions and teaching strategies as the tutor learns what works.
