@@ -36,7 +36,7 @@ echo "    AGENT_VERSION=$AGENT_VERSION"
 echo "==> Creating memory store..."
 MEMSTORE_ID=$(ant beta:memory-stores create \
   --name "ai-tutor" \
-  --description "AI Tutor durable state: concepts.db, profile.md, run records, lessons learned." \
+  --description "AI Tutor durable state: concepts.json, profile.md, run records, lessons learned." \
   --transform id -r)
 echo "    MEMORY_STORE_ID=$MEMSTORE_ID"
 
@@ -47,38 +47,12 @@ ant beta:memory-stores:memories create \
   --content "@./seed_feeds.yaml" > /dev/null
 echo "    feeds.yaml seeded"
 
-echo "==> Seeding concepts.db (via a one-shot session that runs sqlite3)..."
-# We can't directly upload a binary SQLite file via the memories API, so the
-# easiest seeding path is to run a one-shot session that creates the DB on
-# the mounted memory store. Skip if you'd rather seed manually later.
-
-cat > /tmp/ai-tutor-seed-kickoff.txt <<'KICKOFF'
-SEED MODE: Initialize concepts.db at /mnt/memory/ai-tutor/concepts.db using
-the schema in your system prompt. Then read /mnt/memory/ai-tutor/seed_concepts.json
-and INSERT each concept into the table. Verify with `SELECT count(*) FROM concepts;`
-and report the count. Do NOT post to Slack. Exit.
-KICKOFF
-
-# Upload seed_concepts.json into the memory store too, so the agent can read it
+echo "==> Seeding concepts.json..."
 ant beta:memory-stores:memories create \
   --memory-store-id "$MEMSTORE_ID" \
-  --path "/seed_concepts.json" \
+  --path "/concepts.json" \
   --content "@./seed_concepts.json" > /dev/null
-
-SESSION_ID=$(ant beta:sessions create \
-  --agent "$AGENT_ID" \
-  --environment-id "$ENV_ID" \
-  --title "Seed concepts.db" \
-  --resource "{type: memory_store, memory_store_id: $MEMSTORE_ID, access: read_write}" \
-  --transform id -r)
-
-ant beta:sessions:events send --session-id "$SESSION_ID" \
-  --event "{type: user.message, content: [{type: text, text: \"$(cat /tmp/ai-tutor-seed-kickoff.txt)\"}]}" \
-  > /dev/null
-
-echo "    Seed session $SESSION_ID running. Tail with:"
-echo "      ant beta:sessions:events stream --session-id $SESSION_ID"
-echo "    Wait for session.status_idle then archive: ant beta:sessions archive --session-id $SESSION_ID"
+echo "    concepts.json seeded"
 
 echo "==> Writing ai-tutor.env..."
 cat > ai-tutor.env <<EOF
@@ -92,6 +66,5 @@ chmod 600 ai-tutor.env
 
 echo ""
 echo "Done. Next steps:"
-echo "  1. Wait for the seed session ($SESSION_ID) to complete and verify concept count."
-echo "  2. Fill in runtime/.env from runtime/.env.example."
-echo "  3. Run runtime/orchestrator.py daily_run --kickoff 'ONBOARDING start' to send your essay request."
+echo "  1. Fill in runtime/.env from runtime/.env.example."
+echo "  2. Run runtime/orchestrator.py daily --kickoff 'ONBOARDING start' to send your essay request."

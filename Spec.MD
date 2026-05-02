@@ -25,7 +25,9 @@ AI tutor's goal is to keep me current on AI research and discussion by curating 
 - notes; string: Agent-generated summary of what "knowing this" means at my current level
 
 # Storage
-Store in a SQLite DB in the file storage. Backed up. (Implementation detail — pick whatever's cheapest to operate.)
+Store concepts in a text file in the memory store, preferably `concepts.json`.
+Keep it easy for the agent to inspect and rewrite directly; avoid SQLite or
+other binary/stateful formats for the core learning model.
 
 
 # Onboarding
